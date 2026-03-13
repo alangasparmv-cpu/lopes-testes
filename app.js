@@ -5,10 +5,10 @@
 const APP = {
   supabaseUrl: "https://euoetxrcwzkogtdbuiqj.supabase.co",
   supabaseAnonKey: "sb_publishable_q87P7Cy6GQHh6wNxtOOSZA_CwLXiFVN",
-  storageKey: "lopes_mecanica_state_v1",
-  pinKey: "lopes_mecanica_pin_v1",
-  rememberEmailKey: "lopes_cloud_email_v1",
-  rememberPassKey: "lopes_cloud_pass_v1",
+  storageKey: "lopes_mecanica_teste_state_v1",
+  pinKey: "lopes_mecanica_teste_pin_v1",
+  rememberEmailKey: "lopes_teste_email_v1",
+  rememberPassKey: "lopes_teste_pass_v1",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -42,7 +42,6 @@ function loadState(){
   if(!raw) return base;
   try{
     const data = JSON.parse(raw);
-    // garante campos novos
     data.counters = data.counters || { os: 1 };
     data.clients = data.clients || [];
     data.vehicles = data.vehicles || [];
@@ -59,7 +58,6 @@ function loadState(){
 
 let state = loadState();
 
-// Supabase client (loaded via CDN)
 let supabaseClient = null;
 let session = null;
 
@@ -70,9 +68,7 @@ let syncInFlight = false;
 let syncQueued = false;
 let syncDebounceTimer = null;
 
-// interval padrão (visível): 30s
 const SYNC_INTERVAL_VISIBLE_MS = 30000;
-// intervalo quando app fica oculto: 2 min
 const SYNC_INTERVAL_HIDDEN_MS = 120000;
 
 function toast(msg){
@@ -105,14 +101,17 @@ const modals = {
   report: $("modalReport"),
   oilAlerts: $("modalOilAlerts"),
 };
+
 function closeAllModals(){
   if (backdrop) backdrop.hidden = true;
   Object.values(modals).forEach(m => { if(m) m.hidden = true; });
 }
+
 function openModal(which){
   if (backdrop) backdrop.hidden = false;
   if(modals[which]) modals[which].hidden = false;
 }
+
 document.addEventListener("click", (e)=>{
   const t = e.target;
   if(t === backdrop) return closeAllModals();
@@ -138,16 +137,13 @@ function saveState({ sync = true } = {}){
   dirtySinceLastSync = true;
   renderAll();
 
-  // se estiver conectado, tenta sincronizar (debounce)
   if(sync) scheduleAutoSync("saveState");
 }
 
 /* ===== Sync helpers ===== */
 function scheduleAutoSync(reason){
-  // só agenda se estiver logado e online
   if(!session || !navigator.onLine) return;
 
-  // debounce de 900ms pra não disparar várias vezes seguidas
   if(syncDebounceTimer) clearTimeout(syncDebounceTimer);
   syncDebounceTimer = setTimeout(()=>{
     cloudSyncSafe(reason).catch(()=>{});
@@ -164,13 +160,11 @@ async function cloudSyncSafe(reason){
     await cloudSync();
     dirtySinceLastSync = false;
   }catch(err){
-    // falha silenciosa (não spammar toast)
-    // se quiser ver o erro: console.warn(err)
+    // falha silenciosa
   }finally{
     syncInFlight = false;
     if(syncQueued){
       syncQueued = false;
-      // tenta novamente logo depois
       setTimeout(()=> cloudSyncSafe("queued").catch(()=>{}), 800);
     }
   }
@@ -181,7 +175,6 @@ function restartAutoSyncTimer(){
   const ms = document.hidden ? SYNC_INTERVAL_HIDDEN_MS : SYNC_INTERVAL_VISIBLE_MS;
   syncTimer = setInterval(()=>{
     if(session && navigator.onLine){
-      // se não mudou nada, ainda assim puxa do remoto (pega atualizações do PC/celular)
       cloudSyncSafe("interval").catch(()=>{});
     }
   }, ms);
@@ -214,12 +207,14 @@ function dueBadgeForOil(service){
   const now = new Date();
   let due = false;
   let warn = false;
+
   if(d){
     const dd = new Date(d+"T00:00:00");
     const diffDays = Math.round((dd - now) / (1000*60*60*24));
     if(diffDays <= 0) due = true;
     else if(diffDays <= 14) warn = true;
   }
+
   const v = state.vehicles.find(v=>v.id===service.veiculo_id);
   if(v && km != null && Number(v.km_atual||0) >= Number(km)) due = true;
   else if(v && km != null && Number(km) - Number(v.km_atual||0) <= 300) warn = true;
@@ -235,19 +230,22 @@ function renderClients(){
   const list = $("clientsList");
   if(!list) return;
   list.innerHTML = "";
+
   let items = state.clients.slice().sort((a,b)=> (a.nome||"").localeCompare(b.nome||""));
   if(q) items = items.filter(x=> matchesQuery(x,q));
+
   if(items.length===0){
     list.innerHTML = `<div class="muted">Nenhum cliente.</div>`;
     return;
   }
+
   for(const c of items){
     const el = document.createElement("div");
     el.className="item";
     el.innerHTML = `
       <div>
         <div class="title">${escapeHtml(c.nome||"(Sem nome)")}</div>
-        <div class="sub">${c.whatsapp? "Whats: "+escapeHtml(c.whatsapp) : ""}</div>
+        <div class="sub">${c.whatsapp ? "Whats: "+escapeHtml(c.whatsapp) : ""}</div>
       </div>
       <div class="badge">${escapeHtml((c.id||"").slice(0,8))}</div>
     `;
@@ -261,12 +259,15 @@ function renderVehicles(){
   const list = $("vehiclesList");
   if(!list) return;
   list.innerHTML = "";
+
   let items = state.vehicles.slice().sort((a,b)=> (a.placa||"").localeCompare(b.placa||""));
   if(q) items = items.filter(x=> matchesQuery(x,q));
+
   if(items.length===0){
     list.innerHTML = `<div class="muted">Nenhum veículo.</div>`;
     return;
   }
+
   for(const v of items){
     const c = state.clients.find(c=>c.id===v.cliente_id);
     const el = document.createElement("div");
@@ -288,12 +289,15 @@ function renderServices(){
   const list = $("servicesList");
   if(!list) return;
   list.innerHTML = "";
+
   let items = state.services.slice().sort((a,b)=> (b.created_at||"").localeCompare(a.created_at||""));
   if(q) items = items.filter(x=> matchesQuery(x,q));
+
   if(items.length===0){
     list.innerHTML = `<div class="muted">Nenhuma OS.</div>`;
     return;
   }
+
   for(const s of items){
     const v = state.vehicles.find(v=>v.id===s.veiculo_id);
     const c = state.clients.find(c=>c.id===s.cliente_id);
@@ -304,11 +308,12 @@ function renderServices(){
     const sub = `${fmtDate(s.data_servico)} • ${v? v.placa:""} • ${c? c.nome:""} • ${money(s.total||0)}`;
     const payBadge = s.paid ? `<div class="badge ok">Pago</div>` : `<div class="badge">Aberto</div>`;
     const badgeHtml = badge ? `<div class="badge ${badge.cls}">${badge.txt}</div>${payBadge}` : `${payBadge}`;
+
     el.innerHTML = `
       <div>
         <div class="title">${escapeHtml(title)}</div>
         <div class="sub">${escapeHtml(sub)}</div>
-        ${s.tipo==="troca_oleo" ? `<div class="sub">Próxima: ${s.oil_next_date? fmtDate(s.oil_next_date):"-"} ou ${s.oil_next_km? (s.oil_next_km+" km"):"-"}</div>` : ``}
+        ${s.tipo==="troca_oleo" ? `<div class="sub">Próxima: ${s.oil_next_date ? fmtDate(s.oil_next_date) : "-"} ou ${s.oil_next_km ? (s.oil_next_km+" km") : "-"}</div>` : ``}
       </div>
       ${badgeHtml}
     `;
@@ -349,6 +354,7 @@ function renderAll(){
 
 /* ===== CRUD - Cliente ===== */
 let editingClientId = null;
+
 function openClient(id){
   editingClientId = id;
   const c = state.clients.find(x=>x.id===id);
@@ -367,6 +373,7 @@ $("clientSave")?.addEventListener("click", ()=>{
   const whats = norm($("clientWhats").value).replace(/\D/g,"");
   const obs = norm($("clientObs").value);
   if(!nome){ toast("Informe o nome do cliente."); return; }
+
   if(editingClientId){
     const c = state.clients.find(x=>x.id===editingClientId);
     Object.assign(c,{nome,whatsapp:whats,observacoes:obs, updated_at:new Date().toISOString()});
@@ -388,6 +395,7 @@ $("clientDelete")?.addEventListener("click", ()=>{
 
 /* ===== CRUD - Veículo ===== */
 let editingVehicleId = null;
+
 function openVehicle(id){
   editingVehicleId = id;
   const v = state.vehicles.find(x=>x.id===id);
@@ -402,6 +410,7 @@ function openVehicle(id){
   $("vehicleDelete").style.display = v ? "inline-block":"none";
   openModal("vehicle");
 }
+
 $("btnNewVehicle")?.addEventListener("click", ()=> openVehicle(null));
 
 $("vehicleSave")?.addEventListener("click", ()=>{
@@ -412,6 +421,7 @@ $("vehicleSave")?.addEventListener("click", ()=>{
   const ano = norm($("vehicleAno").value);
   const km_atual = Number($("vehicleKm").value || 0);
   const obs = norm($("vehicleObs").value);
+
   if(!placa){ toast("Informe a placa."); return; }
 
   const exists = state.vehicles.find(x=> x.placa===placa && x.id!==editingVehicleId);
@@ -449,12 +459,17 @@ function onOilIntervalChange(){
   const v = $("oilKmInterval")?.value;
   if($("oilKmCustom")) $("oilKmCustom").hidden = v !== "custom";
 }
+
 function toggleOilBlock(){
   if(!$("oilBlock") || !$("osTipo")) return;
   $("oilBlock").style.display = $("osTipo").value === "troca_oleo" ? "block":"none";
 }
+
 function previewOil(){
-  if(!$("osTipo") || $("osTipo").value !== "troca_oleo"){ if($("oilPreview")) $("oilPreview").textContent=""; return; }
+  if(!$("osTipo") || $("osTipo").value !== "troca_oleo"){
+    if($("oilPreview")) $("oilPreview").textContent="";
+    return;
+  }
   const kmServico = Number($("osKm").value||0);
   const dateServico = $("osData").value || todayISO();
   let kmInt = $("oilKmInterval").value;
@@ -466,7 +481,6 @@ function previewOil(){
   if($("oilPreview")) $("oilPreview").textContent = `Próxima troca: ${fmtDate(nextDate)} ou ${nextKm ? (nextKm+" km") : "—"} (o que vencer primeiro).`;
 }
 
-// Pagamento: info de troco e recebido
 function updatePayInfo(){
   const info = $("osPayInfo");
   if(!info) return;
@@ -499,9 +513,8 @@ function openService(id){
   $("osTipo").value = s?.tipo || "troca_oleo";
   $("osObs").value = s?.observacoes || "";
   $("osTotal").value = s?.total ?? "";
-  $("osNumero").value = s?.os_numero || (s? "": nextOsNumber());
+  $("osNumero").value = s?.os_numero || (s ? "" : nextOsNumber());
 
-  // pagamento
   if($("osPaid")) $("osPaid").checked = !!s?.paid;
   if($("osPayMethod")) $("osPayMethod").value = s?.pay_method || "pix";
   if($("osPayAmount")) $("osPayAmount").value = s?.pay_amount ?? "";
@@ -514,7 +527,6 @@ function openService(id){
     $("osVeiculo").value = s?.veiculo_id || "";
   },0);
 
-  // óleo
   $("oilKmInterval").value = s?.oil_km_interval || "10000";
   $("oilKmCustom").value = s?.oil_km_custom || "";
   $("oilMonths").value = s?.oil_months || 6;
@@ -528,16 +540,13 @@ function openService(id){
 }
 
 $("btnNewOS")?.addEventListener("click", ()=> openService(null));
-
 $("osCliente")?.addEventListener("change", filterVehiclesForOs);
 $("osTipo")?.addEventListener("change", ()=> { toggleOilBlock(); previewOil(); });
-
 $("oilKmInterval")?.addEventListener("change", ()=> { onOilIntervalChange(); previewOil(); });
 $("oilKmCustom")?.addEventListener("input", previewOil);
 $("oilMonths")?.addEventListener("input", previewOil);
 $("osData")?.addEventListener("change", previewOil);
 $("osKm")?.addEventListener("input", previewOil);
-
 $("osTotal")?.addEventListener("input", updatePayInfo);
 $("osPayAmount")?.addEventListener("input", updatePayInfo);
 $("osPayChange")?.addEventListener("input", updatePayInfo);
@@ -562,6 +571,7 @@ $("serviceSave")?.addEventListener("click", ()=>{
   if(!data_servico){ toast("Informe a data."); return; }
 
   let oil_next_date=null, oil_next_km=null, oil_km_interval=null, oil_km_custom=null, oil_months=null, oil_spec=null;
+
   if(tipo==="troca_oleo"){
     let kmInt = $("oilKmInterval").value;
     oil_km_interval = kmInt;
@@ -579,8 +589,9 @@ $("serviceSave")?.addEventListener("click", ()=>{
 
   if(editingServiceId){
     const s = state.services.find(x=>x.id===editingServiceId);
-    Object.assign(s,{cliente_id,veiculo_id,data_servico,km_servico,tipo,observacoes,total,os_numero,
-      paid, pay_method, pay_amount, pay_change,
+    Object.assign(s,{
+      cliente_id,veiculo_id,data_servico,km_servico,tipo,observacoes,total,os_numero,
+      paid,pay_method,pay_amount,pay_change,
       oil_next_date,oil_next_km,oil_km_interval,oil_km_custom,oil_months,oil_spec,
       updated_at:new Date().toISOString()
     });
@@ -616,45 +627,153 @@ $("serviceDelete")?.addEventListener("click", ()=>{
   closeAllModals();
 });
 
-/* Print */
+/* Print / Whats */
 $("btnPrint")?.addEventListener("click", ()=> printCurrentOS());
 $("btnWhats")?.addEventListener("click", ()=> sendWhats());
 
 function printCurrentOS(){
   const s = editingServiceId ? state.services.find(x=>x.id===editingServiceId) : null;
+  const tipoAtual = $("osTipo")?.value;
+
+  const oilIntervalValue = $("oilKmInterval")?.value;
+  const oilKmIntervalNum = oilIntervalValue === "custom"
+    ? Number($("oilKmCustom")?.value || 0)
+    : Number(oilIntervalValue || 0);
+
   const snap = s || {
-    cliente_id: $("osCliente").value,
-    veiculo_id: $("osVeiculo").value,
-    data_servico: $("osData").value,
-    km_servico: Number($("osKm").value||0),
-    tipo: $("osTipo").value,
-    observacoes: norm($("osObs").value),
-    total: Number($("osTotal").value||0),
-    os_numero: norm($("osNumero").value),
-    oil_next_date: $("osTipo").value==="troca_oleo" ? addMonths($("osData").value||todayISO(), Number($("oilMonths").value||6)) : null,
-    oil_next_km: $("osTipo").value==="troca_oleo" ? (Number($("osKm").value||0) + Number(($("oilKmInterval").value==="custom" ? ($("oilKmCustom").value||0) : $("oilKmInterval").value)||0)) : null,
-    oil_spec: norm($("oilSpec").value),
+    cliente_id: $("osCliente")?.value || "",
+    veiculo_id: $("osVeiculo")?.value || "",
+    data_servico: $("osData")?.value || todayISO(),
+    km_servico: Number($("osKm")?.value || 0),
+    tipo: tipoAtual || "",
+    observacoes: norm($("osObs")?.value),
+    total: Number($("osTotal")?.value || 0),
+    os_numero: norm($("osNumero")?.value),
+    oil_next_date: tipoAtual === "troca_oleo"
+      ? addMonths($("osData")?.value || todayISO(), Number($("oilMonths")?.value || 6))
+      : null,
+    oil_next_km: tipoAtual === "troca_oleo"
+      ? (Number($("osKm")?.value || 0) + oilKmIntervalNum)
+      : null,
+    oil_spec: norm($("oilSpec")?.value),
   };
+
   const c = state.clients.find(c=>c.id===snap.cliente_id);
   const v = state.vehicles.find(v=>v.id===snap.veiculo_id);
 
-  const printArea = $("printArea");
-  if(!printArea) return;
-  printArea.hidden = false;
-  printArea.innerHTML = `
+  const html = `
+  <!doctype html>
+  <html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>OS ${escapeHtml(snap.os_numero || "")}</title>
+    <style>
+      *{ box-sizing:border-box; }
+      body{
+        margin:0;
+        padding:20px;
+        font-family:Arial, Helvetica, sans-serif;
+        color:#111;
+        background:#fff;
+      }
+      .os-page{
+        width:100%;
+        max-width:900px;
+        margin:0 auto;
+      }
+      .os-header{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:20px;
+        border-bottom:2px solid #000;
+        padding-bottom:16px;
+        margin-bottom:16px;
+      }
+      .os-header-left{
+        display:flex;
+        gap:14px;
+        align-items:flex-start;
+      }
+      .os-header img{
+        width:90px;
+        height:auto;
+        object-fit:contain;
+      }
+      .t{
+        font-size:22px;
+        font-weight:700;
+      }
+      .s{
+        font-size:13px;
+        margin-top:4px;
+      }
+      .os-box{
+        border:1px solid #000;
+        padding:12px;
+        margin-bottom:12px;
+        border-radius:6px;
+      }
+      .os-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+      }
+      .full{
+        grid-column:1 / -1;
+      }
+      .label{
+        font-size:12px;
+        font-weight:700;
+        text-transform:uppercase;
+        margin-bottom:4px;
+      }
+      .value{
+        font-size:15px;
+        line-height:1.4;
+      }
+      .os-hr{
+        border-top:1px solid #ccc;
+        margin:12px 0;
+      }
+      .os-foot{
+        margin-top:20px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        font-size:12px;
+        color:#444;
+      }
+      .assinatura{
+        margin-top:24px;
+        padding-top:12px;
+      }
+      @media print{
+        body{
+          padding:0;
+        }
+        .os-page{
+          max-width:none;
+        }
+      }
+    </style>
+  </head>
+  <body>
     <div class="os-page">
       <div class="os-header">
-        <img src="assets/logo.png" alt="Logo" />
-        <div class="htext">
-          <div class="t">Lopes Serviços Mecânicos</div>
-          <div class="s">Leme/SP • (19) 99772-6572</div>
-          <div class="s">${escapeHtml(snap.os_numero? ("OS Nº "+snap.os_numero) : "Ordem de Serviço")}</div>
+        <div class="os-header-left">
+          <img src="./logo.png" alt="Logo">
+          <div class="htext">
+            <div class="t">Lopes Serviços Mecânicos</div>
+            <div class="s">Leme/SP • (19) 99772-6572</div>
+            <div class="s">${escapeHtml(snap.os_numero ? "OS Nº " + snap.os_numero : "Ordem de Serviço")}</div>
+          </div>
         </div>
-        <div style="min-width:60mm; text-align:right">
+        <div style="min-width:180px; text-align:right">
           <div class="label">Data</div>
           <div class="value">${escapeHtml(fmtDate(snap.data_servico))}</div>
-          <div class="label" style="margin-top:3mm">KM</div>
-          <div class="value">${escapeHtml(String(snap.km_servico||""))}</div>
+          <div class="label" style="margin-top:10px">KM</div>
+          <div class="value">${escapeHtml(String(snap.km_servico || ""))}</div>
         </div>
       </div>
 
@@ -670,7 +789,7 @@ function printCurrentOS(){
           </div>
           <div class="full">
             <div class="label">Veículo</div>
-            <div class="value">${escapeHtml((v?.placa||"") + " • " + (v?.modelo||"") + (v?.ano?(" • "+v.ano):""))}</div>
+            <div class="value">${escapeHtml((v?.placa || "") + " • " + (v?.modelo || "") + (v?.ano ? " • " + v.ano : ""))}</div>
           </div>
         </div>
       </div>
@@ -678,7 +797,7 @@ function printCurrentOS(){
       <div class="os-box">
         <div class="label">Tipo de serviço</div>
         <div class="value">${escapeHtml(labelTipo(snap.tipo))}</div>
-        ${snap.tipo==="troca_oleo" ? `
+        ${snap.tipo === "troca_oleo" ? `
           <div class="os-hr"></div>
           <div class="os-grid">
             <div>
@@ -687,26 +806,26 @@ function printCurrentOS(){
             </div>
             <div>
               <div class="label">Próxima troca</div>
-              <div class="value">${escapeHtml(snap.oil_next_date ? fmtDate(snap.oil_next_date) : "-")}${snap.oil_next_km ? " ou "+snap.oil_next_km+" km":""}</div>
+              <div class="value">${escapeHtml(snap.oil_next_date ? fmtDate(snap.oil_next_date) : "-")}${snap.oil_next_km ? " ou " + snap.oil_next_km + " km" : ""}</div>
             </div>
           </div>
-        `:``}
+        ` : ``}
       </div>
 
       <div class="os-box">
         <div class="label">Itens / Observações</div>
-        <div class="value" style="font-weight:600; white-space:pre-wrap">${escapeHtml(snap.observacoes||"-")}</div>
+        <div class="value" style="white-space:pre-wrap">${escapeHtml(snap.observacoes || "-")}</div>
       </div>
 
       <div class="os-box">
         <div class="os-grid">
           <div>
             <div class="label">Total</div>
-            <div class="value">${escapeHtml(money(snap.total||0))}</div>
+            <div class="value">${escapeHtml(money(snap.total || 0))}</div>
           </div>
-          <div>
+          <div class="assinatura">
             <div class="label">Assinatura</div>
-            <div class="value" style="font-weight:400">________________________________</div>
+            <div class="value">________________________________</div>
           </div>
         </div>
       </div>
@@ -716,9 +835,26 @@ function printCurrentOS(){
         <div>${new Date().toLocaleString("pt-BR")}</div>
       </div>
     </div>
+
+    <script>
+      window.onload = function(){
+        window.print();
+        setTimeout(function(){ window.close(); }, 300);
+      };
+    </script>
+  </body>
+  </html>
   `;
-  window.print();
-  setTimeout(()=>{ printArea.innerHTML=""; printArea.hidden=true; }, 500);
+
+  const win = window.open("", "_blank");
+  if(!win){
+    toast("O navegador bloqueou a janela de impressão. Libere pop-ups para este site.");
+    return;
+  }
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 function sendWhats(){
@@ -726,17 +862,51 @@ function sendWhats(){
   const vid = $("osVeiculo")?.value;
   const c = state.clients.find(c=>c.id===cid);
   const v = state.vehicles.find(v=>v.id===vid);
-  if(!c?.whatsapp){ toast("Cliente sem WhatsApp cadastrado."); return; }
+
+  if(!c?.whatsapp){
+    toast("Cliente sem WhatsApp cadastrado.");
+    return;
+  }
+
+  const numero = String(c.whatsapp).replace(/\D/g, "");
+  if(!numero){
+    toast("WhatsApp do cliente inválido.");
+    return;
+  }
 
   const tipo = labelTipo($("osTipo")?.value);
   const data = $("osData")?.value ? fmtDate($("osData").value) : "";
-  const total = money($("osTotal")?.value||0);
-  let msg = `Olá ${c.nome}! 👋\n\nOS ${$("osNumero")?.value||""}\nServiço: ${tipo}\nVeículo: ${v?.placa||""} ${v?.modelo||""}\nData: ${data}\nTotal: ${total}\n\nQualquer dúvida, estamos à disposição.\nLopes Serviços Mecânicos`;
-  if($("osTipo")?.value==="troca_oleo"){
-    previewOil();
-    msg += `\n\nPróxima troca: ${$("oilPreview")?.textContent.replace("Próxima troca: ","")}`;
+  const total = money($("osTotal")?.value || 0);
+  const osNumero = $("osNumero")?.value || "";
+
+  let msg = `Olá ${c.nome}! 👋
+
+OS ${osNumero}
+Serviço: ${tipo}
+Veículo: ${v?.placa || ""} ${v?.modelo || ""}
+Data: ${data}
+Total: ${total}`;
+
+  if($("osTipo")?.value === "troca_oleo"){
+    const oilIntervalValue = $("oilKmInterval")?.value;
+    const oilKmIntervalNum = oilIntervalValue === "custom"
+      ? Number($("oilKmCustom")?.value || 0)
+      : Number(oilIntervalValue || 0);
+
+    const nextDate = addMonths($("osData")?.value || todayISO(), Number($("oilMonths")?.value || 6));
+    const nextKm = Number($("osKm")?.value || 0) + oilKmIntervalNum;
+
+    msg += `
+
+Próxima troca: ${fmtDate(nextDate)}${nextKm ? " ou " + nextKm + " km" : ""}`;
   }
-  const url = `https://wa.me/55${c.whatsapp}?text=${encodeURIComponent(msg)}`;
+
+  msg += `
+
+Qualquer dúvida, estamos à disposição.
+Lopes Serviços Mecânicos`;
+
+  const url = `https://wa.me/55${numero}?text=${encodeURIComponent(msg)}`;
   window.open(url, "_blank");
 }
 
@@ -845,7 +1015,6 @@ async function cloudSync(){
   if(!session) throw new Error("Não conectado.");
   const owner_id = session.user.id;
 
-  // Pull
   const { data: rows, error: selErr } = await client
     .from("app_state")
     .select("*")
@@ -863,7 +1032,6 @@ async function cloudSync(){
       state = remote.payload;
       state.version = state.version || "1.2";
       state.updated_at = remote.updated_at;
-      // garante campos novos
       state.cash = state.cash || [];
       state.settings = state.settings || { rememberEmail: true, rememberPass: true };
       localStorage.setItem(APP.storageKey, JSON.stringify(state));
@@ -871,7 +1039,6 @@ async function cloudSync(){
     }
   }
 
-  // Push (upsert)
   const payload = state;
   const { error: upErr } = await client
     .from("app_state")
@@ -892,7 +1059,6 @@ function refreshCloudStatus(){
   pill.style.borderColor = session ? "rgba(43,213,118,.35)" : "rgba(255,255,255,.15)";
 }
 
-/* Lembrar email/senha (preencher campos) */
 function initRememberCloudCreds(){
   const emailEl = $("cloudEmail");
   const passEl = $("cloudPass");
@@ -913,14 +1079,11 @@ $("btnCloudLogin")?.addEventListener("click", async ()=>{
     const pass = $("cloudPass").value;
     if(!email || !pass){ toast("Informe e-mail e senha."); return; }
 
-    // salva para preencher automaticamente depois
     localStorage.setItem(APP.rememberEmailKey, email);
     localStorage.setItem(APP.rememberPassKey, pass);
 
     await cloudLogin(email, pass);
     refreshCloudStatus();
-
-    // assim que logar, já sincroniza na hora e liga autosync
     await cloudSyncSafe("login");
     restartAutoSyncTimer();
     toast("Conectado ✅ (Auto-sync ligado)");
@@ -961,34 +1124,30 @@ window.addEventListener("online", ()=>{
   refreshCloudStatus();
   if(session) cloudSyncSafe("online").catch(()=>{});
 });
+
 window.addEventListener("offline", refreshCloudStatus);
 
 document.addEventListener("visibilitychange", ()=>{
-  // muda intervalo e tenta sincronizar ao voltar
   restartAutoSyncTimer();
   if(!document.hidden && session && navigator.onLine){
     cloudSyncSafe("resume").catch(()=>{});
   }
 });
 
-/* Init auth (pega sessão existente) */
 async function initAuthState(){
   try{
     const client = await ensureSupabaseReady();
     const { data } = await client.auth.getSession();
     session = data.session;
-  }catch{ /* ignore */ }
+  }catch{}
   refreshCloudStatus();
   if(session){
     restartAutoSyncTimer();
-    // puxa atualizações do outro aparelho ao abrir
     cloudSyncSafe("startup").catch(()=>{});
   }
 }
 
 /* ===== Extra features v4.0 ===== */
-
-// Marcas e modelos (base offline - principais do Brasil)
 const VEHICLE_DB = {
   "Chevrolet": ["Onix","Onix Plus","Prisma","Celta","Corsa","Classic","Cruze","Tracker","S10","Spin","Montana","Astra","Vectra"],
   "Volkswagen": ["Gol","Voyage","Polo","Virtus","T-Cross","Nivus","Saveiro","Fox","Up!","Jetta","Amarok","Parati"],
@@ -1030,7 +1189,6 @@ function updateModelsForBrand(){
   dlM.innerHTML = models.map(m=>`<option value="${escapeHtml(m)}"></option>`).join("");
 }
 
-// Busca por placa (automaticamente preenche se existir)
 function wirePlateAutofill(){
   const placaEl = $("vehiclePlaca");
   if(!placaEl) return;
@@ -1056,7 +1214,7 @@ function wirePlateAutofill(){
 }
 
 /* ===== Caixa ===== */
-let cashTxMode = "in"; // in/out
+let cashTxMode = "in";
 
 function cashBalance(){
   const txs = state.cash || [];
@@ -1134,7 +1292,7 @@ function saveCashTx(){
 }
 
 /* ===== Relatório ===== */
-function monthKey(iso){ return (iso||"").slice(0,7); } // YYYY-MM
+function monthKey(iso){ return (iso||"").slice(0,7); }
 
 function buildReportMonthOptions(){
   const sel = $("reportMonth");
@@ -1243,7 +1401,7 @@ function renderOilAlerts(){
     const c = state.clients.find(c=>c.id===s.cliente_id);
     const el = document.createElement("div");
     el.className="item";
-    const nextTxt = `${s.oil_next_date? fmtDate(s.oil_next_date):"-"}${s.oil_next_km?(" ou "+s.oil_next_km+" km"):""}`;
+    const nextTxt = `${s.oil_next_date ? fmtDate(s.oil_next_date) : "-"}${s.oil_next_km ? (" ou "+s.oil_next_km+" km") : ""}`;
     el.innerHTML = `
       <div>
         <div class="title">${escapeHtml((c?.nome||""))} • ${escapeHtml((v?.placa||""))}</div>
@@ -1268,7 +1426,6 @@ function openOilAlerts(){
   openModal("oilAlerts");
 }
 
-/* Wire extra UI buttons */
 function wireExtraButtons(){
   $("btnCash")?.addEventListener("click", openCash);
   $("btnCashIn")?.addEventListener("click", ()=>openCashTx("in"));
@@ -1288,12 +1445,10 @@ $("q")?.addEventListener("input", ()=> renderAll());
 
 /* ===== Init ===== */
 window.addEventListener("load", ()=>{
-  // PWA SW
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("./sw.js").catch(()=>{});
   }
 
-  // PIN gate (simple)
   const pin = localStorage.getItem(APP.pinKey) || "1234";
   setTimeout(()=>{
     const entered = prompt("Digite o PIN do sistema (padrão: 1234):");
