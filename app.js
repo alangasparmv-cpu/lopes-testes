@@ -1,7 +1,5 @@
-/* Lopes Serviços Mecânicos - PWA Offline + Sync Supabase (single table app_state)
-   NÃO salva senha do Supabase no banco. Login Supabase via email/senha (Auth).
-   Auto-sync: ao salvar + a cada X segundos + ao voltar pro app.
-*/
+/* Lopes Serviços Mecânicos - PWA Offline + Sync Supabase */
+
 const APP = {
   supabaseUrl: "https://euoetxrcwzkogtdbuiqj.supabase.co",
   supabaseAnonKey: "sb_publishable_q87P7Cy6GQHh6wNxtOOSZA_CwLXiFVN",
@@ -11,7 +9,27 @@ const APP = {
   rememberPassKey: "lopes_teste_pass_v1",
 };
 
-const $ = (id) => document.getElementById(id);
+/* FUNÇÃO SEGURA PARA PEGAR ELEMENTOS */
+function $(id){
+  return document.getElementById(id);
+}
+
+/* FUNÇÃO SEGURA PARA ALTERAR TEXTO */
+function setText(id,text){
+  const el = document.getElementById(id);
+  if(el){
+    el.textContent = text;
+  }
+}
+
+/* FUNÇÃO SEGURA PARA VALOR */
+function setValue(id,value){
+  const el = document.getElementById(id);
+  if(el){
+    el.value = value;
+  }
+}
+
 const fmtDate = (d) => new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
 const todayISO = () => new Date().toISOString().slice(0,10);
 const norm = (s) => (s||"").toString().trim();
