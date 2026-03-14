@@ -358,7 +358,7 @@ let editingClientId = null;
 function openClient(id){
   editingClientId = id;
   const c = state.clients.find(x=>x.id===id);
-  $("clientTitle").textContent = c ? "Editar Cliente" : "Novo Cliente";
+  setText("clientTitle", c ? "Editar Cliente" : "Novo Cliente");
   $("clientNome").value = c?.nome || "";
   $("clientWhats").value = c?.whatsapp || "";
   $("clientObs").value = c?.observacoes || "";
@@ -399,7 +399,7 @@ let editingVehicleId = null;
 function openVehicle(id){
   editingVehicleId = id;
   const v = state.vehicles.find(x=>x.id===id);
-  $("vehicleTitle").textContent = v ? "Editar Veículo" : "Novo Veículo";
+  setText("vehicleTitle", v ? "Editar Veículo" : "Novo Veículo");
   $("vehicleCliente").value = v?.cliente_id || "";
   $("vehiclePlaca").value = v?.placa || "";
   $("vehicleMarca").value = v?.marca || "";
@@ -507,7 +507,7 @@ function openService(id){
   editingServiceId = id;
   const s = state.services.find(x=>x.id===id);
 
-  $("serviceTitle").textContent = s ? "Editar OS" : "Nova OS";
+  setText("serviceTitle", s ? "Editar OS" : "Nova OS");
   $("osData").value = s?.data_servico || todayISO();
   $("osKm").value = s?.km_servico ?? "";
   $("osTipo").value = s?.tipo || "troca_oleo";
