@@ -1,75 +1,22 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+/* Lopes Serviços Mecânicos - versão corrigida */
 
-<title>Lopes Serviços Mecânicos</title>
+const APP = {
+  supabaseUrl: "https://euoetxrcwzkogtdbuiqj.supabase.co",
+  supabaseAnonKey: "sb_publishable_q87P7Cy6GQHh6wNxtOOSZA_CwLXiFVN",
+  storageKey: "lopes_mecanica_teste_state_v1",
+  pinKey: "lopes_mecanica_teste_pin_v1",
+  rememberEmailKey: "lopes_teste_email_v1",
+  rememberPassKey: "lopes_teste_pass_v1",
+};
 
-<link rel="manifest" href="manifest.json">
+const $ = (id) => document.getElementById(id) || null;
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-
-body{
-font-family:Arial;
-margin:0;
-background:#111;
-color:#fff;
+function setText(id, text){
+  const el = document.getElementById(id);
+  if(el){
+    el.textContent = text;
+  }
 }
 
-header{
-background:#000;
-padding:15px;
-display:flex;
-align-items:center;
-gap:10px;
-}
-
-header img{
-height:40px;
-}
-
-main{
-padding:20px;
-}
-
-button{
-padding:10px 15px;
-border:none;
-background:#2bd576;
-color:#000;
-font-weight:bold;
-cursor:pointer;
-border-radius:6px;
-}
-
-button:hover{
-opacity:0.9;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<header>
-<img src="logo.png">
-<h2>Lopes Serviços Mecânicos</h2>
-</header>
-
-<main>
-
-<button id="btnNewClient">Novo Cliente</button>
-<button id="btnNewVehicle">Novo Veículo</button>
-<button id="btnNewOS">Nova OS</button>
-
-</main>
-
-<script defer src="app.js"></script>
-
-</body>
-</html>
+console.log("Sistema carregado corretamente");
