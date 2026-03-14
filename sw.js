@@ -1,7 +1,9 @@
 
-const CACHE_NAME="lopes-mecanica-v4";
+const CACHE_NAME="lopes-mecanica-pwa-v1";
 
-self.addEventListener("install",e=>{self.skipWaiting();});
+self.addEventListener("install",e=>{
+self.skipWaiting();
+});
 
 self.addEventListener("activate",e=>{
 e.waitUntil(
