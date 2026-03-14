@@ -1,4 +1,5 @@
-/* Lopes Serviços Mecânicos - PWA Offline + Sync Supabase */
+
+/* Lopes Serviços Mecânicos - versão corrigida */
 
 const APP = {
   supabaseUrl: "https://euoetxrcwzkogtdbuiqj.supabase.co",
@@ -9,20 +10,13 @@ const APP = {
   rememberPassKey: "lopes_teste_pass_v1",
 };
 
-function $(id){
-  return document.getElementById(id);
-}
+const $ = (id) => document.getElementById(id) || null;
 
-function setText(id,text){
+function setText(id, text){
   const el = document.getElementById(id);
   if(el){
     el.textContent = text;
   }
 }
 
-const fmtDate = (d) => new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
-const todayISO = () => new Date().toISOString().slice(0,10);
-const norm = (s) => (s||"").toString().trim();
-const normPlaca = (p) => norm(p).toUpperCase().replace(/[^A-Z0-9]/g,"");
-const money = (n) => (Number(n||0)).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const uuid = () => crypto.randomUUID();
+console.log("Sistema carregado corretamente");
