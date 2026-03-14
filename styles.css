@@ -199,16 +199,3 @@ body{
 [hidden]{ display:none !important; }
 
 .big{ font-size:22px; font-weight:800; }
-.test-banner{
-  width:100%;
-  background:#c62828;
-  color:#fff;
-  text-align:center;
-  font-weight:700;
-  padding:8px;
-  font-size:14px;
-  letter-spacing:1px;
-  position:sticky;
-  top:0;
-  z-index:9999;
-}
