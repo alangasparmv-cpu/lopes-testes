@@ -199,3 +199,26 @@ body{
 [hidden]{ display:none !important; }
 
 .big{ font-size:22px; font-weight:800; }
+/* MOBILE FIX */
+
+@media (max-width: 768px){
+
+body{
+font-size:16px;
+}
+
+.container{
+padding:12px;
+}
+
+button{
+font-size:16px;
+padding:12px;
+}
+
+input{
+font-size:16px;
+padding:10px;
+}
+
+}
